@@ -1,6 +1,6 @@
 # SihtiImageModel
 
-![Try it](https://anttiluode.github.io/SihtiImageModel/web/index.html)
+[Try it!](https://anttiluode.github.io/SihtiImageModel/web/index.html)
 
 A fixed sieve plus a residue memory, used as an image model. No backpropagation anywhere in the model.
 
