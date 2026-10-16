@@ -1,0 +1,134 @@
+{
+ "dataset": "mnist",
+ "G0": {
+  "max_abs_err": 2.220446049250313e-16,
+  "pass": true
+ },
+ "vocab": {
+  "dims": [
+   160,
+   128,
+   64,
+   24,
+   16
+  ],
+  "recon_psnr_test": 26.14377212524414
+ },
+ "G1": {
+  "single": {
+   "0": 0.6627,
+   "1": 0.8451,
+   "2": 0.8636,
+   "3": 0.8292,
+   "4": 0.7457
+  },
+  "cumulative": {
+   "1": 0.7443,
+   "2": 0.8441,
+   "3": 0.8648,
+   "4": 0.8657,
+   "5": 0.8634
+  }
+ },
+ "G2": {
+  "A_raw_ridge": 0.8615,
+  "B_randomnet_raw_ridge": 0.9591,
+  "C_sihti_ridge": 0.864,
+  "D_randomnet_sihti_ridge": 0.9595,
+  "E_backprop_mlp": 0.9814,
+  "fewshot10_raw": 0.7007,
+  "fewshot10_sihti": 0.6881,
+  "fewshot10_draws": {
+   "raw": [
+    0.6706,
+    0.7168,
+    0.6992,
+    0.6883,
+    0.7286
+   ],
+   "sihti": [
+    0.6683,
+    0.7186,
+    0.7087,
+    0.6238,
+    0.7211
+   ]
+  },
+  "G2a_pass": true,
+  "G2b_pass": true,
+  "G2c_pass": true,
+  "G2d_pass": false
+ },
+ "G3": {
+  "test_nn_median": 4.407113075256348,
+  "gauss": {
+   "recognisable": 0.988,
+   "novelty_ratio": 1.0574315982907445,
+   "copy_rate": 0.0,
+   "G3a_pass": true,
+   "G3b_pass": true
+  },
+  "memory": {
+   "recognisable": 1.0,
+   "novelty_ratio": 0.6875268734718503,
+   "copy_rate": 0.0,
+   "G3a_pass": true,
+   "G3b_pass": true
+  }
+ },
+ "G4": {
+  "keep1": {
+   "coarse_readout_acc": 0.742,
+   "zero": {
+    "psnr": 12.587972640991211,
+    "judge_acc": 0.0885
+   },
+   "gauss_agnostic": {
+    "psnr": 15.529699325561523,
+    "judge_acc": 0.719
+   },
+   "gauss_classread": {
+    "psnr": 16.856077194213867,
+    "judge_acc": 0.7665
+   },
+   "memory_classread": {
+    "psnr": 16.513320922851562,
+    "judge_acc": 0.742
+   },
+   "memory_agnostic": {
+    "psnr": 16.832475662231445,
+    "judge_acc": 0.777
+   },
+   "vocab_ceiling": {
+    "psnr": 26.745378494262695
+   }
+  },
+  "keep2": {
+   "coarse_readout_acc": 0.836,
+   "zero": {
+    "psnr": 14.132955551147461,
+    "judge_acc": 0.474
+   },
+   "gauss_agnostic": {
+    "psnr": 17.80727767944336,
+    "judge_acc": 0.958
+   },
+   "gauss_classread": {
+    "psnr": 19.206621170043945,
+    "judge_acc": 0.9455
+   },
+   "memory_classread": {
+    "psnr": 18.369159698486328,
+    "judge_acc": 0.844
+   },
+   "memory_agnostic": {
+    "psnr": 18.696001052856445,
+    "judge_acc": 0.9285
+   },
+   "vocab_ceiling": {
+    "psnr": 26.745378494262695
+   }
+  },
+  "G4a_pass": true
+ }
+}

@@ -1,0 +1,11 @@
+  patch band r3: 600000 samples, codebook 512
+  patch band r2: 600000 samples, codebook 512
+  patch band r1: 600000 samples, codebook 512
+  patch band r0: 600000 samples, codebook 512
+patch memory fit 99s
+sizes {'P0': 1664, 'P1': 8200000, 'P2': 83968, 'P3': 903168}
+standard keep=1: zero 12.59/0.09  whole_linear 15.53/0.72  whole_memory 16.83/0.78  P0 13.92/0.41  P2 14.06/0.40  P3 15.98/0.77   [P1 15.83 vs P3 16.01 on 300]
+standard keep=2: zero 14.18/0.48  whole_linear 17.81/0.96  whole_memory 18.70/0.93  P0 17.69/0.96  P2 17.21/0.91  P3 20.65/0.97   [P1 19.79 vs P3 20.69 on 300]
+shifted  keep=1: zero 12.61/0.09  whole_linear 13.30/0.35  whole_memory 12.24/0.41  P0 13.92/0.24  P2 13.95/0.20  P3 15.09/0.32   [P1 14.97 vs P3 15.15 on 300]
+shifted  keep=2: zero 14.18/0.27  whole_linear 15.50/0.48  whole_memory 14.05/0.51  P0 17.64/0.46  P2 17.10/0.44  P3 20.38/0.50   [P1 19.53 vs P3 20.48 on 300]
+PG1 True  PG2a drop 0.27 dB True  PG2b margin 6.33 dB True  PG4 True

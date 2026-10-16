@@ -1,0 +1,8 @@
+  patch band r3: 300000 samples, codebook 512
+  patch band r2: 300000 samples, codebook 512
+  patch band r1: 300000 samples, codebook 512
+  patch band r0: 300000 samples, codebook 512
+BSDS patch memory fit 34s
+BSDS keep=1: zero 20.610  P0 22.268  P2 21.613  P3 22.263  P3_beats_P0_on_fraction_of_images 0.363  P1_on_30 21.228  P3_on_30 21.597
+BSDS keep=2: zero 22.758  P0 24.867  P2 23.952  P3 25.122  P3_beats_P0_on_fraction_of_images 1.000  P1_on_30 23.715  P3_on_30 24.410
+PG3 pass: True

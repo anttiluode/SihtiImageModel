@@ -1,0 +1,30 @@
+G0 lossless: max err 2.22e-16  PASS  (7s)
+  band 0: kept 69.3% var with 160 comps
+  band 1: kept 93.0% var with 128 comps
+  band 2: kept 98.8% var with 64 comps
+  band 3: kept 99.1% var with 24 comps
+  band 4: kept 99.9% var with 16 comps
+fit 76s; vocabulary reconstruction PSNR 26.14 dB
+G1 single bands (r0..core): [0.6627, 0.8451, 0.8636, 0.8292, 0.7457]
+G1 cumulative coarse->fine: [0.7443, 0.8441, 0.8648, 0.8657, 0.8634]
+/usr/local/lib/python3.13/dist-packages/sklearn/neural_network/_multilayer_perceptron.py:785: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (20) reached and the optimization hasn't converged yet.
+  warnings.warn(
+  backprop judge trained in 113s
+G2 A_raw_ridge                0.8615
+G2 B_randomnet_raw_ridge      0.9591
+G2 C_sihti_ridge              0.8640
+G2 D_randomnet_sihti_ridge    0.9595
+G2 E_backprop_mlp             0.9814
+G2 fewshot10_raw              0.7007
+G2 fewshot10_sihti            0.6881
+G2 a/b/c/d pass: True True True False
+G3 gauss  recognisable 0.988  novelty ratio 1.06  copy rate 0.000
+G3 memory recognisable 1.000  novelty ratio 0.69  copy rate 0.000
+G4 keep=1: zero 13.43dB/0.102  gauss_agnostic 15.50dB/0.718  gauss_classread 16.81dB/0.756  memory_classread 16.45dB/0.732  memory_agnostic 16.78dB/0.766
+G4 keep=2: zero 14.45dB/0.463  gauss_agnostic 17.77dB/0.963  gauss_classread 19.19dB/0.946  memory_classread 18.33dB/0.854  memory_agnostic 18.62dB/0.925
+G4a pass: True
+
+# --- G4 re-run after baseline fix (python gates.py mnist --g4) ---
+G4 keep=1 (class read from coarse 0.742): zero 12.59dB/0.088  gauss_agnostic 15.53dB/0.719  gauss_classread 16.86dB/0.766  memory_classread 16.51dB/0.742  memory_agnostic 16.83dB/0.777
+G4 keep=2 (class read from coarse 0.836): zero 14.13dB/0.474  gauss_agnostic 17.81dB/0.958  gauss_classread 19.21dB/0.946  memory_classread 18.37dB/0.844  memory_agnostic 18.70dB/0.928
+G4a pass: True

@@ -1,0 +1,617 @@
+<title>Sihti Image Model</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one instrument column. Hero = the sieve read backwards (core + r3 + r2 + r1 + r0 = image),
+   then a sample tray, then the fill-in bench, then the ledger. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#18222c; --muted:#5b6876; --line:#d3dae2;
+  --accent:#1f4fbf; --accent-ink:#ffffff; --warm:#c8601e;
+  --res-neg:#1f4fbf; --res-mid:#f4f6f8; --res-pos:#d2641f;
+  --pass:#2f7d4a; --fail:#b23a3a;
+  --f-display:"Big Shoulders Text","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --panel:#18202a; --ink:#e3e9ef; --muted:#93a1b0; --line:#2b3643;
+  --accent:#7fa3ff; --accent-ink:#0d1420; --warm:#f0965a;
+  --res-neg:#6e95ff; --res-mid:#18202a; --res-pos:#f0965a;
+  --pass:#6fcf8f; --fail:#ff8a8a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --panel:#18202a; --ink:#e3e9ef; --muted:#93a1b0; --line:#2b3643;
+  --accent:#7fa3ff; --accent-ink:#0d1420; --warm:#f0965a;
+  --res-neg:#6e95ff; --res-mid:#18202a; --res-pos:#f0965a;
+  --pass:#6fcf8f; --fail:#ff8a8a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2{font-family:var(--f-display);font-weight:800;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.05}
+h1{font-size:clamp(40px,7vw,64px);text-transform:uppercase}
+h2{font-size:28px;text-transform:uppercase}
+p{margin:0;max-width:66ch}
+.lede{color:var(--muted);font-size:16px}
+.eyebrow{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:12px}
+.eq{font:500 15px var(--f-mono);color:var(--ink)}
+.eq b{color:var(--accent);font-weight:500}
+
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:end}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;color:var(--ink);font:500 13px var(--f-body);padding:7px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 13px var(--f-body);
+  padding:5px 10px;border-radius:99px;cursor:pointer}
+.chips button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--warm);outline-offset:2px}
+.go{background:var(--warm);color:#fff;border:0;border-radius:6px;font:600 15px var(--f-body);padding:9px 20px;cursor:pointer}
+input[type=range]{width:150px;accent-color:var(--accent)}
+.val{font:500 13px var(--f-mono);color:var(--muted)}
+
+.bench{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start}
+.stage{display:flex;flex-direction:column;gap:6px;min-width:0}
+.stage .lab{font:500 12px var(--f-mono);color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.stage .lab b{color:var(--ink);font-weight:500}
+canvas.px{width:100%;aspect-ratio:1;image-rendering:pixelated;display:block;border-radius:4px;background:var(--res-mid);max-width:100%}
+.stage canvas.res{opacity:.95}
+.rowlab{font:500 11px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.note{font-size:13px;color:var(--muted);max-width:none}
+.tray{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.tray canvas{cursor:pointer}
+.status{font:500 13px var(--f-mono);color:var(--muted)}
+
+.pick{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+.pick canvas{cursor:pointer;border:2px solid transparent}
+.pick canvas[aria-pressed="true"]{border-color:var(--warm)}
+.fill{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.photos .stage canvas{width:100%;height:auto;image-rendering:auto;border-radius:4px;display:block;max-width:100%}
+.ppick{display:flex;flex-wrap:wrap;gap:8px}
+.ppick canvas{width:120px;height:auto;cursor:pointer;border:2px solid transparent;border-radius:4px;max-width:100%}
+.ppick canvas[aria-pressed="true"]{border-color:var(--warm)}
+.zoom{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.zoom canvas{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block;max-width:100%}
+.fill .stage .lab{flex-direction:column;gap:0}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 12px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.pill{font:600 11px var(--f-mono);padding:2px 7px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.pill.p{color:var(--pass)} .pill.f{color:var(--fail)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.cols > div{min-width:0}
+@media (max-width:720px){
+  .strip{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+  .stage .lab{font-size:10px;flex-direction:column;gap:0}
+  .tray{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .pick{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .fill{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .photos{grid-template-columns:1fr}
+  .zoom{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cols{grid-template-columns:1fr}
+  .bench{padding:12px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">anttiluode / SihtiImageModel</span>
+    <h1>Sihti Image Model</h1>
+    <p class="lede">A fixed sieve splits every image into residues by scale. A memory keeps the residues of the training images. To make a new image, imagine the coarse core, then read each finer residue from the stored images whose coarser state is closest. No backpropagation anywhere.</p>
+    <p class="eq">image = <b>core</b> + r3 + r2 + r1 + r0 &nbsp;<span class="val">(exact; the inverse is addition)</span></p>
+  </header>
+
+  <section class="bench" aria-labelledby="gen-h">
+    <div class="controls">
+      <div class="ctl"><span class="eyebrow">Dataset</span>
+        <div class="seg" id="ds"><button id="ds-mnist" aria-pressed="true" data-v="mnist">Digits</button><button id="ds-fashion" aria-pressed="false" data-v="fashion">Fashion</button></div></div>
+      <div class="ctl"><span class="eyebrow">Fine residues come from</span>
+        <div class="seg" id="mode"><button id="mode-memory" aria-pressed="true" data-v="memory">Memory read</button><button id="mode-gauss" aria-pressed="false" data-v="gauss">Linear + noise</button></div></div>
+      <div class="ctl"><label class="eyebrow" for="tau">Imagination τ <span class="val" id="tauv">0.70</span></label>
+        <input type="range" id="tau" min="0" max="1.2" step="0.05" value="0.7"></div>
+      <button class="go" id="gen">Generate</button>
+    </div>
+    <div class="ctl"><span class="eyebrow">Class</span><div class="chips" id="cls"></div></div>
+    <h2 id="gen-h" class="rowlab" style="font-family:var(--f-mono);font-size:11px;font-weight:500">Coarse to fine — top: running sum, bottom: the band added at that step</h2>
+    <div class="strip" id="strip"></div>
+    <div class="rowlab">16 more from the same class · tap one to show its stages</div>
+    <div class="tray" id="tray"></div>
+    <p class="status" id="status">Loading model…</p>
+  </section>
+
+  <section class="bench" aria-labelledby="fill-h">
+    <h2 id="fill-h">Fill in the residues</h2>
+    <p class="note">Pick a real test image. The page runs the sieve on it, keeps only the coarse bands, throws the finer residues away, and asks each memory to put them back. None of them is told the class. The whole-image memory addresses with the whole coarse image; the patch memory addresses with a 5×5 window around each place and holds 512 local rules per band. Shift the image a few pixels and watch which one copes.</p>
+    <div class="controls">
+      <div class="ctl"><span class="eyebrow">Given</span>
+        <div class="seg" id="keep"><button id="keep-2" aria-pressed="true" data-v="2">Core + r3</button><button id="keep-1" aria-pressed="false" data-v="1">Core only</button></div></div>
+      <div class="ctl"><span class="eyebrow">Position</span>
+        <div class="seg" id="shift"><button id="shift-0" aria-pressed="true" data-v="0">As drawn</button><button id="shift-1" aria-pressed="false" data-v="1">Shifted up to 4 px</button></div></div>
+    </div>
+    <div class="pick" id="pick"></div>
+    <div class="fill" id="fill"></div>
+  </section>
+
+  <section class="bench" aria-labelledby="photo-h">
+    <h2 id="photo-h">Real photos</h2>
+    <p class="note">The same patch memory idea, fit on 200 BSDS500 photos and run here on photos it never saw. The page keeps core + r3 of each colour channel and fills r2, r1 and r0 back in, once with a single linear filter and once with the 512-rule patch memory. The whole-image memory cannot run on these at all.</p>
+    <div class="ppick" id="ppick"></div>
+    <div class="photos" id="photos"></div>
+    <div class="rowlab">Zoom on the middle of the photo</div>
+    <div class="zoom" id="zoom"></div>
+    <p class="status" id="pstatus">Loading the photo memory…</p>
+  </section>
+
+  <section aria-labelledby="led-h" style="display:flex;flex-direction:column;gap:14px">
+    <h2 id="led-h">Ledger</h2>
+    <p class="note">Pre-registered gates, full test sets. The judge is a backprop MLP trained only on real images; it never sees samples during training.</p>
+    <div class="cols" id="ledger"><p class="status">Loading results…</p></div>
+    <h3 class="eyebrow" style="margin:8px 0 0">Patch memory (second pre-registration)</h3>
+    <div class="tblwrap" id="pledger"><p class="status">Loading results…</p></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const NB = 5, H = 32, W = 32, NPX = H * W;
+const BANDNAMES = ["r0", "r1", "r2", "r3", "core"];
+let M = null, R = {}, ds = "mnist", mode = "memory", cls = 0, tau = 0.7;
+const cache = {};
+
+// ---------- decoding ----------
+function dec(o, bits) {
+  const bin = atob(o.b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const src = bits === 8 ? new Int8Array(u8.buffer) : new Int16Array(u8.buffer);
+  const f = new Float32Array(src.length);
+  for (let i = 0; i < src.length; i++) f[i] = src[i] * o.scale;
+  return { a: f, shape: o.shape };
+}
+function prepare(J) {
+  const m = { classes: J.classes, dims: J.dims, K: J.K };
+  m.mean = J.mean.map(o => dec(o).a);
+  m.U = J.U.map(o => dec(o));
+  m.gen = J.gen.map(g => ({
+    w: g.w, mu: dec(g.mu), L: dec(g.L),
+    A: [0, 1, 2, 3].map(b => dec(g.A[b])), Lb: [0, 1, 2, 3].map(b => dec(g.Lb[b]))
+  }));
+  m.genAll = { A: [0, 1, 2, 3].map(b => dec(J.gen_all.A[b])) };
+  m.bank = J.bank.map(bs => bs.map(o => dec(o, 8)));
+  const bin = atob(J.test.b64);
+  m.test = []; m.testLab = J.test.labels;
+  for (let i = 0; i < J.test.labels.length; i++) {
+    const x = new Float32Array(NPX);
+    for (let p = 0; p < NPX; p++) x[p] = bin.charCodeAt(i * NPX + p) / 255;
+    m.test.push(x);
+  }
+  // all-class bank for class-free memory reads
+  m.bankAll = [0, 1, 2, 3, 4].map(b => {
+    const parts = m.bank.map(c => c[b]); const n = parts.reduce((s, p) => s + p.shape[0], 0);
+    const a = new Float32Array(n * m.dims[b]); let o = 0;
+    for (const p of parts) { a.set(p.a, o); o += p.a.length; }
+    return { a, shape: [n, m.dims[b]] };
+  });
+  return m;
+}
+
+// ---------- linear algebra ----------
+let seed = 12345;
+function rand() { seed = (seed * 1664525 + 1013904223) >>> 0; return (seed + 0.5) / 4294967296; }
+function randn() { return Math.sqrt(-2 * Math.log(rand())) * Math.cos(2 * Math.PI * rand()); }
+function vecMat(v, A) { // v (n) @ A (n x k)
+  const [n, k] = A.shape, out = new Float32Array(k);
+  for (let i = 0; i < n; i++) { const vi = v[i]; if (!vi) continue; const r = i * k; for (let j = 0; j < k; j++) out[j] += vi * A.a[r + j]; }
+  return out;
+}
+function lowMul(L, off, k, eps) { // L (k x k) at offset @ eps
+  const out = new Float32Array(k);
+  for (let i = 0; i < k; i++) { let s = 0; for (let j = 0; j <= i; j++) s += L[off + i * k + j] * eps[j]; out[i] = s; }
+  return out;
+}
+function prevOf(Z, b) { // coarser codes, coarse first
+  const parts = []; for (let j = NB - 1; j > b; j--) parts.push(Z[j]);
+  const n = parts.reduce((s, p) => s + p.length, 0), o = new Float32Array(n); let i = 0;
+  for (const p of parts) { o.set(p, i); i += p.length; } return o;
+}
+function withOne(v) { const o = new Float32Array(v.length + 1); o.set(v); o[v.length] = 1; return o; }
+function bankPrev(bank, b, i) {
+  const parts = []; for (let j = NB - 1; j > b; j--) { const d = M.dims[j]; parts.push(bank[j].a.subarray(i * d, (i + 1) * d)); }
+  return parts;
+}
+function readMemory(prev, b, bank, topk = 8) {
+  const n = bank[b].shape[0], d2 = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0, o = 0;
+    for (const p of bankPrev(bank, b, i)) { for (let j = 0; j < p.length; j++) { const t = prev[o + j] - p[j]; s += t * t; } o += p.length; }
+    d2[i] = s;
+  }
+  const idx = Array.from(d2.keys()).sort((x, y) => d2[x] - d2[y]).slice(0, topk);
+  const dmin = d2[idx[0]], h = idx.reduce((s, i) => s + d2[i], 0) / topk + 1e-9;
+  const wts = idx.map(i => Math.exp(-(d2[i] - dmin) / h)), ws = wts.reduce((a, c) => a + c, 0);
+  const k = M.dims[b], out = new Float32Array(k);
+  idx.forEach((i, t) => { const w = wts[t] / ws; for (let j = 0; j < k; j++) out[j] += w * bank[b].a[i * k + j]; });
+  return out;
+}
+function generate(c, md, t) {
+  const g = M.gen[c], dc = M.dims[NB - 1];
+  let r = rand(), k = 0; while (k < g.w.length - 1 && (r -= g.w[k]) > 0) k++;
+  const eps = Array.from({ length: dc }, randn), Lz = lowMul(g.L.a, k * dc * dc, dc, eps);
+  const Z = new Array(NB); Z[NB - 1] = new Float32Array(dc);
+  for (let j = 0; j < dc; j++) Z[NB - 1][j] = g.mu.a[k * dc + j] + t * Lz[j];
+  for (let b = NB - 2; b >= 0; b--) {
+    const prev = prevOf(Z, b);
+    if (md === "gauss") {
+      const z = vecMat(withOne(prev), g.A[b]), kb = M.dims[b];
+      const e = Array.from({ length: kb }, randn), n = lowMul(g.Lb[b].a, 0, kb, e);
+      for (let j = 0; j < kb; j++) z[j] += t * n[j];
+      Z[b] = z;
+    } else Z[b] = readMemory(prev, b, M.bank[c]);
+  }
+  return Z;
+}
+function bandImage(Z, b) {
+  const U = M.U[b], k = U.shape[1], x = new Float32Array(M.mean[b]);
+  const z = Z[b];
+  for (let p = 0; p < NPX; p++) { let s = 0; const r = p * k; for (let j = 0; j < k; j++) s += U.a[r + j] * z[j]; x[p] += s; }
+  return x;
+}
+function sumImages(list) { const o = new Float32Array(NPX); for (const x of list) for (let p = 0; p < NPX; p++) o[p] += x[p]; return o; }
+
+// ---------- the sieve, run live on test images ----------
+function purify(x, h = H, w = W) {
+  const o = new Float32Array(h * w);
+  for (let i = 0; i < h; i++) for (let j = 0; j < w; j++) {
+    const c = x[i * w + j], u = x[Math.max(i - 1, 0) * w + j], d = x[Math.min(i + 1, h - 1) * w + j],
+      l = x[i * w + Math.max(j - 1, 0)], r = x[i * w + Math.min(j + 1, w - 1)];
+    o[i * w + j] = c + 0.25 * (u + d + l + r - 4 * c);
+  }
+  return o;
+}
+function sieve(x, h = H, w = W) {
+  const depths = [0, 1, 4, 16, 64], states = []; let cur = x, step = 0;
+  for (const d of depths) { while (step < d) { cur = purify(cur, h, w); step++; } states.push(cur); }
+  const bands = []; for (let k = 0; k < 4; k++) bands.push(states[k].map((v, p) => v - states[k + 1][p]));
+  bands.push(states[4]); return bands;
+}
+function encodeBand(x, b) {
+  const U = M.U[b], k = U.shape[1], z = new Float32Array(k), m = M.mean[b];
+  for (let p = 0; p < NPX; p++) { const v = x[p] - m[p], r = p * k; for (let j = 0; j < k; j++) z[j] += v * U.a[r + j]; }
+  return z;
+}
+
+// ---------- drawing ----------
+function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function hex(c) { const m = c.match(/^#?([0-9a-f]{6})$/i); if (!m) return [128, 128, 128]; const v = parseInt(m[1], 16); return [v >> 16, (v >> 8) & 255, v & 255]; }
+function canvas() { const c = document.createElement("canvas"); c.width = W; c.height = H; c.className = "px"; return c; }
+function drawGray(cv, x) {
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H);
+  for (let p = 0; p < NPX; p++) { const v = Math.max(0, Math.min(255, Math.round(x[p] * 255))); im.data.set([v, v, v, 255], p * 4); }
+  ctx.putImageData(im, 0, 0);
+}
+function drawSigned(cv, x) {
+  const neg = hex(tok("--res-neg")), mid = hex(tok("--res-mid")), pos = hex(tok("--res-pos"));
+  let mx = 1e-6; for (const v of x) mx = Math.max(mx, Math.abs(v));
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H);
+  for (let p = 0; p < NPX; p++) {
+    const t = Math.max(-1, Math.min(1, x[p] / mx)), to = t < 0 ? neg : pos, a = Math.abs(t);
+    im.data.set([0, 1, 2].map(i => Math.round(mid[i] + (to[i] - mid[i]) * a)).concat(255), p * 4);
+  }
+  ctx.putImageData(im, 0, 0);
+}
+function psnr(a, b) { let s = 0; for (let p = 0; p < NPX; p++) { const d = Math.max(0, Math.min(1, a[p])) - b[p]; s += d * d; } return 10 * Math.log10(1 / Math.max(s / NPX, 1e-12)); }
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const stripCells = [];
+function buildStrip() {
+  const labels = [["core", "16 numbers"], ["+ r3", "24"], ["+ r2", "64"], ["+ r1", "128"], ["+ r0 = image", "160"]];
+  labels.forEach(([a, b]) => {
+    const s = document.createElement("div"); s.className = "stage";
+    const lab = document.createElement("div"); lab.className = "lab"; lab.innerHTML = `<b>${a}</b><span>${b}</span>`;
+    const top = canvas(), bot = canvas(); bot.classList.add("res");
+    s.append(lab, top, bot); $("strip").append(s); stripCells.push({ top, bot });
+  });
+}
+let last = [];
+function showStages(Z, animate) {
+  const bandsCoarseFirst = [4, 3, 2, 1, 0].map(b => bandImage(Z, b));
+  const acc = [];
+  const step = i => {
+    acc.push(bandsCoarseFirst[i]);
+    drawGray(stripCells[i].top, sumImages(acc));
+    if (i === 0) drawGray(stripCells[i].bot, bandsCoarseFirst[0]); else drawSigned(stripCells[i].bot, bandsCoarseFirst[i]);
+  };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  stripCells.forEach(c => { c.top.getContext("2d").clearRect(0, 0, W, H); c.bot.getContext("2d").clearRect(0, 0, W, H); });
+  if (!animate || reduce) { for (let i = 0; i < 5; i++) step(i); return; }
+  for (let i = 0; i < 5; i++) setTimeout(() => step(i), i * 140);
+}
+function run() {
+  if (!M) return;
+  const t0 = performance.now();
+  last = [];
+  for (let i = 0; i < 17; i++) last.push(generate(cls, mode, tau));
+  showStages(last[0], true);
+  $("tray").innerHTML = "";
+  last.slice(1).forEach(Z => {
+    const cv = canvas(); drawGray(cv, sumImages([0, 1, 2, 3, 4].map(b => bandImage(Z, b))));
+    cv.tabIndex = 0; cv.setAttribute("role", "button"); cv.setAttribute("aria-label", "Show stages of this sample");
+    const show = () => showStages(Z, true);
+    cv.addEventListener("click", show); cv.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(); } });
+    $("tray").append(cv);
+  });
+  $("status").textContent = `${M.classes[cls]} · ${mode === "memory" ? "core imagined, residues read from 200 stored images" : "every band predicted linearly from the coarser ones, plus noise"} · 17 images in ${Math.round(performance.now() - t0)} ms`;
+}
+function buildChips() {
+  $("cls").innerHTML = "";
+  M.classes.forEach((n, i) => {
+    const b = document.createElement("button"); b.id = "cls-" + i; b.textContent = n; b.setAttribute("aria-pressed", i === cls);
+    b.onclick = () => { cls = i; [...$("cls").children].forEach((c, j) => c.setAttribute("aria-pressed", j === i)); run(); };
+    $("cls").append(b);
+  });
+}
+let picked = 0;
+function buildPick() {
+  $("pick").innerHTML = "";
+  const order = []; for (let k = 0; k < 2; k++) for (let c = 0; c < M.classes.length; c++) order.push(c * (M.test.length / M.classes.length) + k);
+  order.slice(0, 24).forEach((i, n) => {
+    const cv = canvas(); drawGray(cv, M.test[i]); cv.tabIndex = 0; cv.setAttribute("role", "button");
+    cv.setAttribute("aria-label", "Use test image " + M.classes[M.testLab[i]]); cv.setAttribute("aria-pressed", n === 0);
+    const go = () => { [...$("pick").children].forEach(x => x.setAttribute("aria-pressed", x === cv)); fill(i); };
+    cv.onclick = go; cv.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+    $("pick").append(cv);
+  });
+  fill(order[0]);
+}
+// ---------- patch residue memory ----------
+const PSTR = [1, 1, 2, 4], PG = 5, PP = 4, PEPS = 0.02;
+function preparePatch(J) {
+  const out = {};
+  for (const b of [0, 1, 2, 3]) { const o = J.bands[b]; out[b] = { C: dec(o.C), W: dec(o.W), W0: dec(o.W0) }; }
+  return out;
+}
+function pgrid(L) { const g = []; for (let i = 0; i <= L - PP; i += 2) g.push(i); if (g[g.length - 1] !== L - PP) g.push(L - PP); return g; }
+function patchPredict(C, h, w, b, arm, PM) {
+  const s = PSTR[b], m = PM[b], ii = pgrid(h), jj = pgrid(w);
+  const out = new Float32Array(h * w), cnt = new Float32Array(h * w);
+  const a = new Float32Array(PG * PG + 1), v = new Float32Array(16);
+  const Cn = m.C.a, Wk = m.W.a, W0 = m.W0.a, K = m.C.shape[0];
+  for (const i of ii) for (const j of jj) {
+    let t = 0;
+    for (let u = 0; u < PG; u++) {
+      const r = Math.min(h - 1, Math.max(0, i + 2 + (u - 2) * s));
+      for (let q = 0; q < PG; q++) a[t++] = C[r * w + Math.min(w - 1, Math.max(0, j + 2 + (q - 2) * s))];
+    }
+    a[25] = 1; v.fill(0);
+    if (arm === "P0") {
+      for (let d = 0; d < 26; d++) { const ad = a[d], r = d * 16; for (let e = 0; e < 16; e++) v[e] += ad * W0[r + e]; }
+    } else {
+      let mu = 0; for (let d = 0; d < 25; d++) mu += a[d]; mu /= 25;
+      let vr = 0; for (let d = 0; d < 25; d++) { a[d] -= mu; vr += a[d] * a[d]; }
+      const sc = Math.sqrt(vr / 25) + PEPS;
+      for (let d = 0; d < 25; d++) a[d] /= sc;
+      let best = 0, bd = Infinity;
+      for (let k = 0; k < K; k++) {
+        let dd = 0; const o = k * 25;
+        for (let d = 0; d < 25 && dd < bd; d++) { const z = a[d] - Cn[o + d]; dd += z * z; }
+        if (dd < bd) { bd = dd; best = k; }
+      }
+      const o = best * 26 * 16;
+      for (let d = 0; d < 26; d++) { const ad = a[d], r = o + d * 16; for (let e = 0; e < 16; e++) v[e] += ad * Wk[r + e]; }
+      for (let e = 0; e < 16; e++) v[e] *= sc;
+    }
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { const p = (i + y) * w + j + x; out[p] += v[y * 4 + x]; cnt[p]++; }
+  }
+  for (let p = 0; p < h * w; p++) out[p] /= cnt[p];
+  return out;
+}
+function patchComplete(bands, keep, arm, PM, h = H, w = W) {
+  const out = new Array(NB);
+  for (let j = NB - keep; j < NB; j++) out[j] = bands[j];
+  for (let b = NB - keep - 1; b >= 0; b--) {
+    const C = new Float32Array(h * w);
+    for (let j = b + 1; j < NB; j++) for (let p = 0; p < h * w; p++) C[p] += out[j][p];
+    out[b] = patchPredict(C, h, w, b, arm, PM);
+  }
+  const x = new Float32Array(h * w); for (const o of out) for (let p = 0; p < h * w; p++) x[p] += o[p];
+  return x;
+}
+function shiftImage(x, dx, dy) {
+  const o = new Float32Array(NPX);
+  for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) {
+    const si = i - dy, sj = j - dx;
+    if (si >= 0 && si < H && sj >= 0 && sj < W) o[i * W + j] = x[si * W + sj];
+  }
+  return o;
+}
+let keepN = 2, shifted = false, lastPick = 0, shiftBy = [0, 0];
+function fill(i) {
+  lastPick = i;
+  const x = shifted ? shiftImage(M.test[i], shiftBy[0], shiftBy[1]) : M.test[i], bands = sieve(x);
+  const Z = new Array(NB);
+  for (let b = NB - keepN; b < NB; b++) Z[b] = encodeBand(bands[b], b);
+  const lin = [...Z], mem = [...Z];
+  for (let b = NB - keepN - 1; b >= 0; b--) {
+    lin[b] = vecMat(withOne(prevOf(lin, b)), M.genAll.A[b]);
+    mem[b] = readMemory(prevOf(mem, b), b, M.bankAll);
+  }
+  const given = new Float32Array(NPX);
+  for (let b = NB - keepN; b < NB; b++) for (let p = 0; p < NPX; p++) given[p] += bands[b][p];
+  const out = [["truth", x, ""], [keepN === 2 ? "given: core + r3" : "given: core only", given, null],
+    ["whole-image linear", sumImages([0, 1, 2, 3, 4].map(b => bandImage(lin, b))), null],
+    ["whole-image memory", sumImages([0, 1, 2, 3, 4].map(b => bandImage(mem, b))), null]];
+  if (PMs[ds]) out.push(["patch memory", patchComplete(bands, keepN, "P3", PMs[ds]), null]);
+  $("fill").innerHTML = "";
+  out.forEach(([name, im, p], k) => {
+    const s = document.createElement("div"); s.className = "stage";
+    const v = k === 0 ? M.classes[M.testLab[i]] : psnr(im, x).toFixed(1) + " dB";
+    const lab = document.createElement("div"); lab.className = "lab"; lab.innerHTML = `<b>${name}</b><span>${v}</span>`;
+    const cv = canvas(); drawGray(cv, im); s.append(lab, cv); $("fill").append(s);
+  });
+}
+function pct(v) { return (100 * v).toFixed(1) + "%"; }
+function pill(ok) { return ok === undefined ? "" : `<span class="pill ${ok ? "p" : "f"}">${ok ? "PASS" : "FAIL"}</span>`; }
+function renderLedger() {
+  const sets = ["mnist", "fashion"].filter(k => R[k]);
+  if (!sets.length) { $("ledger").innerHTML = `<p class="status">Results file not found next to the page.</p>`; return; }
+  $("ledger").innerHTML = sets.map(k => {
+    const r = R[k], g2 = r.G2, g3 = r.G3, g4 = r.G4.keep1;
+    const rows = [
+      ["Sieve lossless", r.G0.max_abs_err.toExponential(1), pill(r.G0.pass)],
+      ["Ridge on raw pixels", pct(g2.A_raw_ridge), ""],
+      ["Random ReLU net + ridge (raw)", pct(g2.B_randomnet_raw_ridge), ""],
+      ["Ridge on Sihti codes", pct(g2.C_sihti_ridge), pill(g2.G2a_pass)],
+      ["Random ReLU net + ridge (Sihti)", pct(g2.D_randomnet_sihti_ridge), pill(g2.G2b_pass)],
+      ["Backprop MLP (reference)", pct(g2.E_backprop_mlp), ""],
+      ["10 per class: raw → Sihti", pct(g2.fewshot10_raw) + " → " + pct(g2.fewshot10_sihti), pill(g2.G2d_pass)],
+      ["Samples recognised: memory", pct(g3.memory.recognisable), pill(g3.memory.G3a_pass)],
+      ["Samples recognised: linear+noise", pct(g3.gauss.recognisable), pill(g3.gauss.G3a_pass)],
+      ["Novelty ratio memory / linear", g3.memory.novelty_ratio.toFixed(2) + " / " + g3.gauss.novelty_ratio.toFixed(2), pill(g3.memory.G3b_pass && g3.gauss.G3b_pass)],
+      ["Fill from core: none → linear → memory", g4.zero.psnr.toFixed(1) + " → " + g4.gauss_agnostic.psnr.toFixed(1) + " → " + g4.memory_agnostic.psnr.toFixed(1) + " dB", pill(r.G4.G4a_pass)],
+    ];
+    return `<div><h3 class="eyebrow" style="margin:0 0 6px">${k === "mnist" ? "Digits (MNIST)" : "Fashion-MNIST"}</h3><div class="tblwrap"><table><thead><tr><th>Measure</th><th>Value</th><th></th></tr></thead><tbody>` +
+      rows.map(([a, b, c]) => `<tr><td>${a}</td><td class="n">${b}</td><td>${c}</td></tr>`).join("") + `</tbody></table></div></div>`;
+  }).join("");
+}
+const PMs = {};
+async function loadPatch(name) {
+  if (PMs[name]) return PMs[name];
+  const res = await fetch(`patch_${name}.json`);
+  if (!res.ok) throw new Error(`patch_${name}.json returned ${res.status}`);
+  PMs[name] = preparePatch(await res.json());
+  return PMs[name];
+}
+async function load(name) {
+  $("status").textContent = "Loading model…";
+  if (!cache[name]) {
+    const res = await fetch(`model_${name}.json`);
+    if (!res.ok) throw new Error(`model_${name}.json returned ${res.status}`);
+    cache[name] = prepare(await res.json());
+  }
+  M = cache[name]; cls = 0; buildChips(); buildPick(); run();
+  loadPatch(name).then(() => { if (ds === name) fill(lastPick); }).catch(() => {});
+}
+
+// ---------- real photos ----------
+const PHOTOS = [["42049", "hawk on a branch"], ["8023", "bird on the ground"], ["108082", "tiger"], ["196073", "snake on sand"]];
+const photoData = {};
+function loadPhoto(n) {
+  return new Promise((ok, bad) => {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+      const ctx = c.getContext("2d"); ctx.drawImage(im, 0, 0);
+      const d = ctx.getImageData(0, 0, im.width, im.height).data, n2 = im.width * im.height;
+      const ch = [0, 1, 2].map(k => { const a = new Float32Array(n2); for (let p = 0; p < n2; p++) a[p] = d[p * 4 + k] / 255; return a; });
+      ok({ w: im.width, h: im.height, ch, thumb: c });
+    };
+    im.onerror = () => bad(new Error("photo_" + n + ".png did not load"));
+    im.src = `photo_${n}.png`;
+  });
+}
+function drawRGB(cv, chs, w, h) {
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(w, h);
+  for (let p = 0; p < w * h; p++) {
+    for (let k = 0; k < 3; k++) im.data[p * 4 + k] = Math.max(0, Math.min(255, Math.round(chs[k][p] * 255)));
+    im.data[p * 4 + 3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+}
+function psnrRGB(a, b, n) { let s = 0; for (let k = 0; k < 3; k++) for (let p = 0; p < n; p++) { const d = Math.max(0, Math.min(1, a[k][p])) - b[k][p]; s += d * d; } return 10 * Math.log10(1 / (s / (3 * n))); }
+async function showPhoto(n) {
+  $("pstatus").textContent = "Filling in the residues…";
+  await new Promise(r => setTimeout(r, 30));
+  const t0 = performance.now();
+  const PM = await loadPatch("bsds"), P = photoData[n], { w, h } = P, N = w * h;
+  const given = [], p0 = [], p3 = [];
+  const names = ["red", "green", "blue"];
+  for (let k = 0; k < 3; k++) {
+    const x = P.ch[k], bands = sieve(x, h, w);
+    const g = new Float32Array(N); for (let p = 0; p < N; p++) g[p] = bands[3][p] + bands[4][p];
+    given.push(g); p0.push(patchComplete(bands, 2, "P0", PM, h, w));
+    $("pstatus").textContent = `Filling in the residues… ${names[k]} channel`;
+    await new Promise(r => setTimeout(r, 0));
+    p3.push(patchComplete(bands, 2, "P3", PM, h, w));
+    await new Promise(r => setTimeout(r, 0));
+  }
+  const panels = [["photo (held out)", P.ch, ""], ["given: core + r3", given, psnrRGB(given, P.ch, N)],
+    ["linear filter", p0, psnrRGB(p0, P.ch, N)], ["patch memory", p3, psnrRGB(p3, P.ch, N)]];
+  $("photos").innerHTML = ""; $("zoom").innerHTML = "";
+  const zw = Math.min(64, w), zh = Math.min(64, h), zx = Math.floor((w - zw) / 2), zy = Math.floor((h - zh) / 2);
+  panels.forEach(([name, chs, v]) => {
+    const s = document.createElement("div"); s.className = "stage";
+    const lab = document.createElement("div"); lab.className = "lab"; lab.innerHTML = `<b>${name}</b><span>${v === "" ? "" : v.toFixed(1) + " dB"}</span>`;
+    const cv = document.createElement("canvas"); drawRGB(cv, chs, w, h); cv.setAttribute("aria-label", name);
+    s.append(lab, cv); $("photos").append(s);
+    const z = document.createElement("canvas"); z.width = zw; z.height = zh;
+    z.getContext("2d").drawImage(cv, zx, zy, zw, zh, 0, 0, zw, zh); z.setAttribute("aria-label", name + ", zoomed");
+    $("zoom").append(z);
+  });
+  $("pstatus").textContent = `${PHOTOS.find(p => p[0] === n)[1]} · ${w}×${h} px · 3 colour channels × 3 bands filled in ${Math.round(performance.now() - t0)} ms`;
+}
+async function buildPhotos() {
+  try {
+    for (const [n] of PHOTOS) photoData[n] = await loadPhoto(n);
+    PHOTOS.forEach(([n, label], k) => {
+      const cv = photoData[n].thumb; cv.tabIndex = 0; cv.setAttribute("role", "button");
+      cv.setAttribute("aria-label", "Use photo: " + label); cv.setAttribute("aria-pressed", k === 0);
+      const go = () => { [...$("ppick").children].forEach(x => x.setAttribute("aria-pressed", x === cv)); showPhoto(n); };
+      cv.onclick = go; cv.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+      $("ppick").append(cv);
+    });
+    await new Promise(r => setTimeout(r, 1200));
+    await showPhoto(PHOTOS[0][0]);
+  } catch (err) { $("pstatus").textContent = "Could not load the photos: " + err.message; }
+}
+function renderPatchLedger(P) {
+  const rows = [];
+  for (const k of ["mnist", "fashion"]) {
+    const r = P[k]; if (!r) continue;
+    const s2 = r.standard_keep2, h2 = r.shifted_keep2, nm = k === "mnist" ? "Digits" : "Fashion";
+    rows.push([`${nm}: fill from core + r3, whole linear / whole memory / patch`, `${s2.whole_linear.psnr.toFixed(1)} / ${s2.whole_memory.psnr.toFixed(1)} / ${s2.P3.psnr.toFixed(1)} dB`, pill(r.PG1_pass)]);
+    rows.push([`${nm}: cost of shifting up to 4 px, patch`, `${r.PG2a_drop_dB.toFixed(2)} dB`, pill(r.PG2a_pass)]);
+    rows.push([`${nm}: shifted, whole memory vs patch`, `${h2.whole_memory.psnr.toFixed(1)} vs ${h2.P3.psnr.toFixed(1)} dB`, pill(r.PG2b_pass)]);
+    if (r.PG5) rows.push([`${nm}: scratch pixels found (AUROC), high-pass vs patch; which images (AUROC)`, `${r.PG5.highpass.pixel_auroc.toFixed(3)} vs ${r.PG5.P3.pixel_auroc.toFixed(3)}; ${r.PG5.P3.image_auroc.toFixed(2)}`, pill(r.PG5.PG5_pass)]);
+  }
+  if (P.bsds) rows.push(["300 held-out photos: none / linear filter / patch (core + r3 given)", `${P.bsds.keep2.zero.toFixed(2)} / ${P.bsds.keep2.P0.toFixed(2)} / ${P.bsds.keep2.P3.toFixed(2)} dB`, pill(P.bsds.PG3_pass)]);
+  if (P.mnist) rows.push(["Stored numbers: patch memory vs whole-image model", `${(P.mnist.PG4_size.P3 / 1e6).toFixed(2)}M vs ${((P.mnist.PG4_whole_image.fixed + P.mnist.PG4_whole_image.memory_bank) / 1e6).toFixed(1)}M`, pill(P.mnist.PG4_pass)]);
+  $("pledger").innerHTML = `<table><thead><tr><th>Measure</th><th>Value</th><th></th></tr></thead><tbody>` +
+    rows.map(([a, b, c]) => `<tr><td>${a}</td><td class="n">${b}</td><td>${c}</td></tr>`).join("") + `</tbody></table>`;
+}
+function seg(id, cb) {
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    [...$(id).children].forEach(c => c.setAttribute("aria-pressed", c === b)); cb(b.dataset.v);
+  });
+}
+buildStrip();
+seg("ds", v => { ds = v; load(v).catch(err => $("status").textContent = "Could not load the model: " + err.message); });
+seg("mode", v => { mode = v; run(); });
+seg("keep", v => { keepN = +v; if (M) fill(lastPick); });
+seg("shift", v => {
+  shifted = v === "1";
+  if (shifted) { do { shiftBy = [Math.floor(Math.random() * 9) - 4, Math.floor(Math.random() * 9) - 4]; } while (!shiftBy[0] && !shiftBy[1]); }
+  if (M) fill(lastPick);
+});
+$("tau").addEventListener("input", e => { tau = +e.target.value; $("tauv").textContent = tau.toFixed(2); });
+$("tau").addEventListener("change", run);
+$("gen").addEventListener("click", run);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => last.length && showStages(last[0], false));
+load("mnist").catch(err => $("status").textContent = "Could not load the model: " + err.message);
+Promise.all(["mnist", "fashion"].map(k => fetch(`results_${k}.json`).then(r => r.ok ? r.json() : null).then(j => { if (j) R[k] = j; }).catch(() => {})))
+  .then(renderLedger);
+const PR = {};
+Promise.all(["mnist", "fashion", "bsds"].map(k => fetch(`patch_results_${k}.json`).then(r => r.ok ? r.json() : null).then(j => { if (j) PR[k] = j; }).catch(() => {})))
+  .then(() => renderPatchLedger(PR));
+buildPhotos();
+</script>
