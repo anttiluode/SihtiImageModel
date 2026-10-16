@@ -267,6 +267,46 @@ the edge energy of the fill itself:
 On digits and clothing the per-code part carries real information. On photos it does not beat
 simply looking at where the fill draws edges.
 
+## Codes of codes: a nonlinear coarse scale (PREREG_CODES2.md). Kill condition fired.
+
+Arm Q adds a second level to the patch memory: each band's coarse input becomes a map of 64 local
+codes, the codes of the 3x3 neighbouring places (4 px apart) are compressed to 32 numbers, and the
+expert is chosen by k-means on [window ; neighbourhood codes]. 2.1M stored numbers (P3: 0.9M).
+`python codes2_gates.py mnist|fashion|bsds|cifar10`.
+
+| | MNIST P3 / Q | Fashion P3 / Q | |
+|---|---|---|---|
+| CG1 fill from core only | 15.98 / 16.00 dB (+0.02) | 17.55 / 17.43 dB (-0.11) | **FAIL** both (needed +0.3) |
+| fill from core + r3 | 20.65 / **21.31** dB (+0.65) | 20.41 / **20.70** dB (+0.29) | reported |
+| CG2 wrong readings, core only (of 975 / 913) | 204 / 244 | 243 / 249 | **FAIL** both (Q makes more) |
+| CG3 P3-vs-Q disagreement predicts Q's flips, AUROC | 0.43 | 0.38 | **FAIL** both |
+| CG4 cost of shifting, Q, core + r3 | 0.36 dB | 0.71 dB | PASS / **FAIL** |
+| photos, core + r3 (60 held out): P0 / P3 / Q | | | 24.52 / 24.81 / 24.83 dB |
+
+CG5 (CIFAR-10) needs the data on Antti's machine: `python codes2_gates.py cifar10`.
+
+My prediction that the gain would be largest from the bare core was wrong: Q helps a little where the
+given image already has local structure (core + r3) and not at all from the core alone, which is
+exactly where the wrong readings happen.
+
+**Post-hoc, not pre-registered** (`codes2_posthoc_core_info.py`): are the wrong readings simply an
+information limit of the 16-number core? No.
+
+| class read from the 16-number core alone | MNIST | Fashion |
+|---|---|---|
+| linear ridge (G4 class read) | 74.2% | 67.5% |
+| kNN, k = 15 (closed form) | 87.6% | 81.8% |
+| backprop MLP 256-256 | 94.4% | 84.9% |
+| judge reading the P3 fill (UG3 set) | 79.1% | 73.4% |
+
+The core holds enough to name a digit 94% of the time, but the fills are read correctly only 79% of
+the time. The missing information is *in* the core; the fill fails to use it. Q does not fix that
+because the decision is a global function of the core's 16 numbers, and Q's route to it quantises
+small, contrast-normalised windows of an almost flat image. Normalising each window divides out the
+amplitude relations between places, which are exactly what distinguishes a blurred 7 from a blurred 9.
+The nonlinearity that would help is over the whole core (here kNN already reaches 87.6% with no
+backprop), not codes of local codes.
+
 ## Correction made during the run
 
 The first G4 run used "codes = 0" as the core-only baseline, which decodes to the core **plus the

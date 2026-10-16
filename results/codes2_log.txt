@@ -1,0 +1,22 @@
+mnist fill keep1: {'none': 12.592077255249023, 'P3': 15.977771759033203, 'Q': 15.997982025146484}
+mnist fill keep2: {'none': 14.182263374328613, 'P3': 20.652629852294922, 'Q': 21.305973052978516}
+mnist shift keep2: {'P3': 20.38286781311035, 'Q': 20.942378997802734}  Q drop 0.36 dB
+mnist flips keep1: {'n_ok': 975, 'P3': 204, 'Q': 244}  CG3 {'disagreement_auroc': 0.43055773586598195, 'Q_uncertainty_auroc': 0.4265658989482182}
+mnist CG1 False (+0.02 dB)  CG2 False  CG3 False  CG4 True
+  codes2 band r3: 600000 samples, context explains 48% of code-neighbourhood variance
+  codes2 band r2: 600000 samples, context explains 37% of code-neighbourhood variance
+  codes2 band r1: 600000 samples, context explains 37% of code-neighbourhood variance
+  codes2 band r0: 600000 samples, context explains 39% of code-neighbourhood variance
+Q fit 249s
+fashion fill keep1: {'none': 13.101409912109375, 'P3': 17.54821014404297, 'Q': 17.434667587280273}
+fashion fill keep2: {'none': 15.593513488769531, 'P3': 20.40697479248047, 'Q': 20.69651985168457}
+fashion shift keep2: {'P3': 19.876209259033203, 'Q': 19.98822593688965}  Q drop 0.71 dB
+fashion flips keep1: {'n_ok': 913, 'P3': 243, 'Q': 249}  CG3 {'disagreement_auroc': 0.38346155707166013, 'Q_uncertainty_auroc': 0.3805402332220448}
+fashion CG1 False (-0.11 dB)  CG2 False  CG3 False  CG4 False
+  codes2 band r3: 300000 samples, context explains 35% of code-neighbourhood variance
+  codes2 band r2: 300000 samples, context explains 28% of code-neighbourhood variance
+  codes2 band r1: 300000 samples, context explains 24% of code-neighbourhood variance
+  codes2 band r0: 300000 samples, context explains 24% of code-neighbourhood variance
+Q fit 117s
+bsds fill keep2: {'none': 22.330604553222656, 'P0': 24.51858901977539, 'P3': 24.80718231201172, 'Q': 24.828590393066406}
+ALLDONE
