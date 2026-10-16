@@ -32,7 +32,7 @@ stores its residue codes. Reading is addressing by the coarse state.
 pip install numpy scipy pillow matplotlib scikit-learn
 python gates.py mnist        # ~10 min on 2 CPU cores
 python gates.py fashion
-python gates.py cifar10      # birds; downloads CIFAR-10 once. NOT run yet (see below)
+python gates.py cifar10      # natural colour images; downloads CIFAR-10 once (results below)
 python export_web.py         # writes web/model_*.json for the browser page
 python -m pytest tests
 
@@ -91,6 +91,52 @@ Reading the table:
   fill was wrong; it wins on PSNR too, because the linear fill is only linear.
 - Where it fails visibly: an ambiguous core gets confidently filled with the wrong class (a 5 becomes
   a 1, a dress becomes trousers). See `fig_completion_*.png`.
+
+## CIFAR-10: the whole-image model fails on natural images
+
+Run by Antti on his own machine (`python gates.py cifar10`), same code, same pre-registered gates,
+32x32 colour, 50 000 train / 10 000 test. The fitted model stays on his disk (GitHub size limit);
+the numbers are in `results/results_cifar10.json`, the figures in `results/*cifar10.png`.
+
+| gate | CIFAR-10 | MNIST, for comparison | |
+|---|---|---|---|
+| G0 sieve lossless | 1.1e-16 | 2.2e-16 | PASS |
+| finest band kept by the vocabulary | 36% | 69% | |
+| vocabulary ceiling (encode, decode a test image) | 23.6 dB | 26.1 dB | |
+| G1 core alone reads the class | 34.8% | 74.6% | |
+| G1 all bands | 39.5% | 86.3% | |
+| G2 ridge raw / Sihti | 40.8% / 39.5% | 86.2% / 86.4% | G2a **FAIL** |
+| G2 random ReLU + ridge raw / Sihti | 47.7% / 45.9% | 95.9% / 96.0% | G2b **FAIL** |
+| G2 backprop MLP (the judge) | 49.2% | 98.1% | G2c PASS |
+| G2d 10-shot raw -> Sihti | 21.0% -> 18.6% | 70.1% -> 68.8% | **FAIL** |
+| G3 samples recognised, linear / memory | 53.6% / 55.6% | 98.8% / 100% | G3a **FAIL** |
+| G3 novelty ratio linear / memory | 0.71 / 0.58 | 1.06 / 0.69 | G3b PASS |
+| G4 fill from core: none -> linear -> memory | 16.7 -> 17.6 -> 17.1 dB | 12.6 -> 15.5 -> 16.8 dB | G4a **FAIL** (+0.87 dB, needed 1) |
+| G4 fill from core + r3: none -> linear -> memory | 18.4 -> 19.3 -> 18.6 dB | 14.1 -> 17.8 -> 18.7 dB | |
+
+Reading it:
+
+- **The vocabulary loses the detail before any memory acts.** 392 whole-image components keep only
+  36% of the finest band's variance on colour photos, so the ceiling is 23.6 dB. G2a and G2b fail
+  for that reason: the Sihti codes are a lossy coordinate system here, 1.2 points below raw pixels.
+- **The class lives in colour layout.** The 16-number core alone gives 34.8% of the 39.5% a linear
+  reader gets from everything. A linear reader on CIFAR mostly sees sky, grass and road colours.
+- **The samples are colour statistics, not objects** (`fig_samples_cifar10.png`). Airplanes are blue
+  fields with a grey smear, ships have a blue-grey lower half, frogs are green-brown mottle. Memory
+  samples are recognised *more* often (55.6%) than the judge recognises real test images (49.2%):
+  they are more stereotyped than reality. The judge is itself weak (a 20-epoch MLP on raw pixels);
+  a convolutional judge would be a sharper instrument but would not make these samples objects.
+- **The memory fill now loses to the linear fill**, the opposite of MNIST. It paints borrowed
+  blotchy texture where the object was (`fig_completion_cifar10.png`: the yellow biplane becomes a
+  stippled orange cloud).
+- **Why:** a whole-image memory needs a stored example close to the whole new image. Digits lie on a
+  narrow manifold where 2000 per class come close; CIFAR images never repeat as wholes, so the
+  nearest stored images share only their colour layout, and that is all the memory can return.
+  If an image is P windows each with about k local states, whole images need about k^P examples.
+- This was predicted in the README before the run ("the linear mode will look like coloured fog").
+- The patch memory, which survived real photos on BSDS500, was not run on CIFAR. At 32 px a 5x5
+  window at r3's stride covers most of the object, so gains like BSDS at best are expected, not
+  like MNIST.
 
 ## How much memory does memory mode need?  (`python bank_size.py`, run after the gates)
 
@@ -230,10 +276,9 @@ G4a passed both before and after. Both runs are in `results/log_*.txt`.
 
 ## Not done
 
-- **No CIFAR-10.** It could not be downloaded in the sandbox where this was built.
-  `python gates.py cifar10` will download and run the whole-image model on it. Real bird photos
-  were tested only through the patch memory (BSDS500), and only for filling in detail, not for
-  generating a bird from nothing.
+- CIFAR-10 was run only through the whole-image model (it failed, see above). The patch memory was
+  tested on real photos (BSDS500), and only for filling in detail, not for generating a bird from
+  nothing.
 - Generating a new photo from scratch would need a global model for the layout; the patch memory
   only fills in below it.
 - The sieve operator is the plain lattice. Sihti's own-colour-graph operator (objects stay in the
