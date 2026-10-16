@@ -1,9 +1,5 @@
 # SihtiImageModel
 
-![pic](pic.png)
-
-[Try it!](https://anttiluode.github.io/SihtiImageModel/web/index.html)
-
 A fixed sieve plus a residue memory, used as an image model. No backpropagation anywhere in the model.
 
 ```
@@ -169,6 +165,57 @@ super-resolution with coupled dictionaries (Yang, Wright, Huang & Ma 2010), anch
 regression, which is a codebook of local linear maps very close to P3 (Timofte, De Smet & Van Gool
 2013, A+ 2014), and RAISR (Romano, Isidoro & Milanfar 2016, hashed local filters). Patch-memory
 anomaly detection: PatchCore (Roth et al. 2022), which uses pretrained deep features.
+
+## Checks on the patch memory: leak, noise, and does it know when it is guessing
+
+**Leak.** The lattice diffusion step (dt = 0.25) passes the checkerboard frequency with gain
+exactly 1 forever, so a trace of the finest detail survives inside the "coarse" bands. Re-running
+the patch memory on a leak-free sieve (dt = 0.2, checkerboard gain 4e-5) gives the same fill:
+20.65 dB both ways (`checks_leak.py`). It is not reading the leak.
+
+**Noise.** Real cameras do not give a noise-free blur. Fit and tested with 1% noise on the given
+coarse image (`checks_noise.py`), fill from core + r3:
+
+| | no fill | linear filter | codebook means | patch memory P3 |
+|---|---|---|---|---|
+| digits | 14.2 | 16.3 | 17.1 | **19.7** |
+| photos (60 held out) | 22.2 | 23.3 | 23.4 | **23.8** |
+
+Untrained for noise, the linear filter collapses on digits (11.7 dB at 1%) while P3 holds (19.6).
+On low-dimensional local structure the inverse is stable; on photo texture it is not.
+
+**Uncertainty (PREREG_UNCERTAINTY.md).** U1 = each code's leftover training variance, scaled by window
+contrast. AUSE = gap to perfect error ranking (lower is better); cover2 = share of pixels whose
+error falls inside 2 predicted standard deviations after one scale fitted on training images.
+
+| | U1 AUSE | edge-energy AUSE | U1 cover2 | UG1 | UG2 |
+|---|---|---|---|---|---|
+| digits, core + r3 | 0.094 | 0.255 | 0.98 | PASS | PASS |
+| digits, core only | 0.085 | 0.394 | 0.91 | PASS | PASS |
+| clothing, core + r3 | 0.188 | 0.420 | 0.96 | PASS | PASS |
+| clothing, core only | 0.198 | 0.553 | 0.92 | PASS | PASS |
+| photos, core + r3 | 0.234 | 0.325 | 0.94 | PASS | PASS |
+
+Neighbour disagreement (U2) ranks even better where it was run: 0.064 digits, 0.115 clothing.
+
+**UG3 FAILED on both datasets.** Whether the filled image ends up read as the *wrong class* (a 7 that
+becomes a 9) is not predicted by the image's mean uncertainty: AUROC 0.43 digits, 0.40 clothing
+(204 and 243 flips, core only), below chance. The memory knows where its strokes are shaky; it does
+not know when the strokes add up to the wrong object. Every local decision can be confident while
+the global reading is wrong.
+
+**Post-hoc, not pre-registered** (`uncertainty_posthoc.py`): is U1 more than "where the ink is"?
+Two stricter baselines, the same map with one shared variance for every code (contrast only) and
+the edge energy of the fill itself:
+
+| AUSE | U1 | contrast only | edges of the fill |
+|---|---|---|---|
+| digits core + r3 / core only | 0.094 / 0.085 | 0.189 / 0.199 | 0.147 / 0.128 |
+| clothing core + r3 / core only | 0.188 / 0.198 | 0.346 / 0.337 | 0.297 / 0.253 |
+| photos core + r3 | 0.234 | 0.261 | **0.225** |
+
+On digits and clothing the per-code part carries real information. On photos it does not beat
+simply looking at where the fill draws edges.
 
 ## Correction made during the run
 
