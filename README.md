@@ -287,25 +287,83 @@ CG5 (CIFAR-10) needs the data on Antti's machine: `python codes2_gates.py cifar1
 
 My prediction that the gain would be largest from the bare core was wrong: Q helps a little where the
 given image already has local structure (core + r3) and not at all from the core alone, which is
-exactly where the wrong readings happen.
+where the wrong readings happen. Caveat from external review: core + r3 both adds evidence and removes
+one prediction step (r3), so this comparison does not say which of the two produced the gain.
 
-**Post-hoc, not pre-registered** (`codes2_posthoc_core_info.py`): are the wrong readings simply an
-information limit of the 16-number core? No.
+**Post-hoc, not pre-registered** (`codes2_posthoc_core_info.py`): how much class information does the
+core carry? The readers below get the core's 16 PCA coefficients; P3 and Q get the full blurred
+core array, which holds the same information to 99.9% of its variance.
 
-| class read from the 16-number core alone | MNIST | Fashion |
+| class read from the core alone | MNIST | Fashion |
 |---|---|---|
 | linear ridge (G4 class read) | 74.2% | 67.5% |
 | kNN, k = 15 (closed form) | 87.6% | 81.8% |
 | backprop MLP 256-256 | 94.4% | 84.9% |
 | judge reading the P3 fill (UG3 set) | 79.1% | 73.4% |
 
-The core holds enough to name a digit 94% of the time, but the fills are read correctly only 79% of
-the time. The missing information is *in* the core; the fill fails to use it. Q does not fix that
-because the decision is a global function of the core's 16 numbers, and Q's route to it quantises
-small, contrast-normalised windows of an almost flat image. Normalising each window divides out the
-amplitude relations between places, which are exactly what distinguishes a blurred 7 from a blurred 9.
-The nonlinearity that would help is over the whole core (here kNN already reaches 87.6% with no
-backprop), not codes of local codes.
+These readers were scored on the full test set and the fill on the 1000-image UG3 subset, so the
+comparison is indicative; PREREG_GLOBAL.md repeats it on the same images. What it supports: a global
+reader extracts considerably more class information from the coarse observation than the fills express.
+It does not show that every misread image is recoverable, or that knowing the class would reconstruct
+the particular shape.
+
+Why Q did not use that information is **not established**. My first explanation (per-window contrast
+normalisation divides out the relations between places) is a hypothesis: the +0.02 in the
+denominator keeps some contrast information, and Q rescales its output by the saved contrast. Other
+candidates are the 64-code quantisation, PCA keeping high-variance rather than useful context features,
+clustering that does not optimise the prediction, and first-band (r3) errors propagating. Q's coarsest
+context already spans about 25x25 of the 32x32 frame, so "nonlinearity confined to tiny windows"
+understates what it receives. The pre-registration's sentence that a failure means the in-between AI
+"stops at early vision" overreached: one representation failed, not the idea.
+
+## Global summary for the local experts (PREREG_GLOBAL.md)
+
+Designed after an external review of the codes-of-codes run: isolate access to global relationships
+before adding any class-specific memory. g = the 16 PCA coefficients of the given core band, the same
+16 numbers for every place in the image, not normalised per window. No labels anywhere.
+**G** keeps P3's routing and codebook and only re-fits each expert as a linear map of [window ; g ; 1].
+**GP** adds the window's position and position x g. **GR** routes on [window ; g].
+`python global_gates.py mnist fashion` (needs the earlier caches).
+
+| | MNIST P3 / Q / **G** / GP / GR | Fashion P3 / Q / **G** / GP / GR |
+|---|---|---|
+| fill, core only (dB) | 15.98 / 16.00 / **16.93** / 17.41 / 15.54 | 17.55 / 17.43 / **18.44** / 18.85 / 16.71 |
+| fill, core + r3 (dB) | 20.65 / 21.31 / **21.11** / 21.57 / 19.36 | 20.41 / 20.70 / **20.74** / 21.06 / 19.15 |
+| wrong readings, core only | 204 / 244 / **134** / 123 / 181 (of 975) | 243 / 249 / **202** / 177 / 258 (of 913) |
+| fill read correctly | 79.1 / 75.0 / **86.3** / 87.4 / 81.4 % | 73.4 / 72.7 / **77.9** / 80.6 / 71.7 % |
+| individuality top-1 (own image nearest among 100 of its class) | 0.61 / 0.66 / **0.77** / 0.84 / 0.36 | 0.46 / 0.45 / **0.63** / 0.68 / 0.37 |
+| cost of a 1-4 px shift, core + r3 (dB) | 0.27 / 0.36 / **0.98** / 2.22 / 2.22 | 0.53 / 0.71 / **1.23** / 2.37 / 1.25 |
+| stored numbers | 0.90M / 2.10M / **1.44M** / 2.56M | same |
+
+Gates for G: **GG1 fidelity PASS** on both (+0.95, +0.89 dB; needed +0.3). **GG2 identity PASS on MNIST,
+FAIL on Fashion** (0.66x and 0.83x of P3's wrong readings; needed 0.8x). **GG3 not stereotyped PASS** on
+both: the fills become *more* individual, not less. GP passes all three on both; GR fails all three.
+
+Per-band error at keep 1 (core only): G lowers every band, most at the first predicted band
+(r3: MNIST 3.8e-4 -> 2.3e-4, Fashion 4.8e-4 -> 2.9e-4, about -40%), with smaller drops further down.
+The gain starts where the global summary matters most, at the coarsest prediction, and carries through.
+
+Information ceiling on the same 1000 images, reading the class from the 16 coefficients alone:
+kNN 86.5% / MLP 94.8% (MNIST), kNN 83.0% / MLP 86.4% (Fashion). These count all 1000 images; the
+fill-read rates above count the images the judge reads correctly when real (975 / 913).
+
+Reading it:
+
+- **The review's question has a yes answer.** Letting the cheap local experts read 16 global numbers
+  linearly gives about +0.9 dB from the core alone and removes a third of the digit misreadings, with
+  routing, codebook and sampling unchanged. Q saw a wide neighbourhood too and gained nothing from the core.
+  G differs in several ways at once (unquantised, unnormalised, whole-image, read linearly by the
+  expert rather than through new routing), so which of these mattered is not isolated here.
+- **It is not stereotyping.** Each fill is closer to its own particular image than before (0.61 -> 0.77
+  on digits), so the gain is fidelity to the instance, not a drift toward the class average.
+- **Routing on g (GR) is worse than nothing.** The global summary helps as an *input* to an expert,
+  not as the *address* that chooses it: with g in the routing, regions mix places that look alike
+  globally but differ locally.
+- **The cost is shift tolerance.** g is a PCA of a centred image, so a moved digit changes it: G loses
+  1.0-1.2 dB under a 1-4 px shift, against P3's 0.3-0.5. GP buys its extra gain with position and loses
+  2.2-2.4 dB. A shift-tolerant global summary is the open problem this leaves.
+- G's digit fills are now read about as well as a kNN reader of the core (86.3% vs 86.5%), still below
+  the MLP's 94.8%, so more of the core's information remains unused.
 
 ## Correction made during the run
 

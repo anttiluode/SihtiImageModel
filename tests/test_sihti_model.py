@@ -65,3 +65,21 @@ def test_patch_memory_fits_and_completes():
     for arm in ("P0", "P1", "P2", "P3"):
         im, out = pm.complete(Bs, 2, arm)
         assert im.shape == X[:4].shape and np.allclose(out[4], Bs[4])
+
+
+def test_global_and_context_memories_run():
+    from sihti_model.codes2 import ContextPatchMemory
+    from sihti_model.globalpatch import GlobalPatchMemory
+    from sihti_model.patch import PatchMemory, bands_of
+    X, y = _toy(200)
+    m = SihtiImageModel(dims=(32, 32, 16, 8, 4), K=2)
+    m.fit(X, y, 2, verbose=False)
+    X = X[:, 0]
+    pm = PatchMemory(K=16, bank=500, per_image=20).fit(lambda: [X[:100], X[100:]], verbose=False)
+    Bs = bands_of(X[:4])
+    q = ContextPatchMemory(K=16, K1=8, zdim=4, per_image=20).fit(lambda: [X[:100], X[100:]], verbose=False)
+    assert q.complete(Bs, 1)[0].shape == X[:4].shape
+    for mode in ("G", "GP", "GR"):
+        g = GlobalPatchMemory(pm, m, mode, K=16, per_image=20).fit(lambda: [X[:100], X[100:]], verbose=False)
+        img, out = g.complete(Bs, 1)
+        assert img.shape == X[:4].shape and np.allclose(out[4], Bs[4])

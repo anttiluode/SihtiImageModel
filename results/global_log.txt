@@ -1,0 +1,55 @@
+  G band r3: 600000 samples, expert inputs 42
+  G band r2: 600000 samples, expert inputs 42
+  G band r1: 600000 samples, expert inputs 42
+  G band r0: 600000 samples, expert inputs 42
+mnist G fit 85s
+  GP band r3: 600000 samples, expert inputs 76
+  GP band r2: 600000 samples, expert inputs 76
+  GP band r1: 600000 samples, expert inputs 76
+  GP band r0: 600000 samples, expert inputs 76
+mnist GP fit 85s
+  GR band r3: 600000 samples, expert inputs 42
+  GR band r2: 600000 samples, expert inputs 42
+  GR band r1: 600000 samples, expert inputs 42
+  GR band r0: 600000 samples, expert inputs 42
+mnist GR fit 131s
+mnist fill keep1: P3 15.98  Q 16.00  G 16.93  GP 17.41  GR 15.54
+mnist fill keep2: P3 20.65  Q 21.31  G 21.11  GP 21.57  GR 19.36
+mnist shift cost: P3 0.27  Q 0.36  G 0.98  GP 2.22  GR 2.22
+mnist flips keep1 (of 975): {'P3': 204, 'Q': 244, 'G': 134, 'GP': 123, 'GR': 181}
+mnist individuality top-1: P3 0.608  Q 0.661  G 0.772  GP 0.842  GR 0.364
+mnist band error P3: r3 3.77e-04  r2 2.43e-03  r1 3.97e-03  r0 7.31e-03
+mnist band error Q: r3 3.42e-04  r2 2.28e-03  r1 3.92e-03  r0 7.33e-03
+mnist band error G: r3 2.25e-04  r2 1.93e-03  r1 3.52e-03  r0 6.88e-03
+mnist band error GP: r3 1.73e-04  r2 1.69e-03  r1 3.22e-03  r0 6.62e-03
+mnist band error GR: r3 4.64e-04  r2 3.04e-03  r1 4.80e-03  r0 7.74e-03
+mnist readers on the same 1000: {'kNN15': 0.865, 'MLP': 0.948, 'judge_on_real': 0.975}
+mnist gates: {'G': {'GG1': True, 'GG2': True, 'GG3': True}, 'GP': {'GG1': True, 'GG2': True, 'GG3': True}, 'GR': {'GG1': False, 'GG2': False, 'GG3': False}}
+  G band r3: 600000 samples, expert inputs 42
+  G band r2: 600000 samples, expert inputs 42
+  G band r1: 600000 samples, expert inputs 42
+  G band r0: 600000 samples, expert inputs 42
+fashion G fit 87s
+  GP band r3: 600000 samples, expert inputs 76
+  GP band r2: 600000 samples, expert inputs 76
+  GP band r1: 600000 samples, expert inputs 76
+  GP band r0: 600000 samples, expert inputs 76
+fashion GP fit 87s
+  GR band r3: 600000 samples, expert inputs 42
+  GR band r2: 600000 samples, expert inputs 42
+  GR band r1: 600000 samples, expert inputs 42
+  GR band r0: 600000 samples, expert inputs 42
+fashion GR fit 136s
+fashion fill keep1: P3 17.55  Q 17.43  G 18.44  GP 18.85  GR 16.71
+fashion fill keep2: P3 20.41  Q 20.70  G 20.74  GP 21.06  GR 19.15
+fashion shift cost: P3 0.53  Q 0.71  G 1.23  GP 2.37  GR 1.25
+fashion flips keep1 (of 913): {'P3': 243, 'Q': 249, 'G': 202, 'GP': 177, 'GR': 258}
+fashion individuality top-1: P3 0.458  Q 0.454  G 0.627  GP 0.682  GR 0.370
+fashion band error P3: r3 4.78e-04  r2 1.40e-03  r1 2.48e-03  r0 7.86e-03
+fashion band error Q: r3 4.63e-04  r2 1.42e-03  r1 2.56e-03  r0 8.04e-03
+fashion band error G: r3 2.85e-04  r2 1.03e-03  r1 2.11e-03  r0 7.30e-03
+fashion band error GP: r3 2.05e-04  r2 8.86e-04  r1 2.00e-03  r0 7.16e-03
+fashion band error GR: r3 6.47e-04  r2 1.98e-03  r1 3.05e-03  r0 8.37e-03
+fashion readers on the same 1000: {'kNN15': 0.83, 'MLP': 0.864, 'judge_on_real': 0.913}
+fashion gates: {'G': {'GG1': True, 'GG2': False, 'GG3': True}, 'GP': {'GG1': True, 'GG2': True, 'GG3': True}, 'GR': {'GG1': False, 'GG2': False, 'GG3': False}}
+ALLDONE
