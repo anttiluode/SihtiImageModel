@@ -1,5 +1,7 @@
 # SihtiImageModel
 
+EDIT: Version 2 with small transformer: https://github.com/anttiluode/SihtiImageModel2
+
 ![pic](pic.png)
 
 [Try it!](https://anttiluode.github.io/SihtiImageModel/web/index.html)
